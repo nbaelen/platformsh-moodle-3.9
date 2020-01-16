@@ -1,49 +1,55 @@
 # This file describes an application. You can have multiple applications
 # in the same project.
+#
+# See https://docs.platform.sh/user_guide/reference/platform-app-yaml.html
 
 # The name of this app. Must be unique within a project.
 name: app
 
-# The type of the application to build.
-type: php:7.3
+# The runtime the application uses.
+type: php:7.0
+
+# Configuration of the build of this application.
 build:
-    flavor: composer
+  flavor: composer
 
-# The hooks that will be performed when the package is deployed.
-hooks:
-    build: |
-        set -e
-
-    deploy: |
-        set -e
+# Include extra PHP extensions.
+runtime:
+  extensions:
+    - xmlrpc
 
 # The relationships of the application with services or other applications.
+#
 # The left-hand side is the name of the relationship as it will be exposed
 # to the application in the PLATFORM_RELATIONSHIPS variable. The right-hand
 # side is in the form `<service name>:<endpoint name>`.
-#relationships:
-#    database: "db:mysql"
+relationships:
+  database: mysqldb:mysql
+
+# The configuration of app when it is exposed to the web.
+web:
+  locations:
+    '/':
+      root: 'public'
+      passthru: /index.php
+      allow: true
+    '/uploads':
+      root: 'public'
+      allow: false
 
 # The size of the persistent disk of the application (in MB).
 disk: 2048
 
-# The mounts that will be performed when the package is deployed.
+# The 'mounts' describe writable, persistent filesystem mounts in the application. The keys are
+# directory paths, relative to the application root. The values are strings such as
+# 'shared:files/NAME', where NAME is just a unique name for the mount.
 mounts:
-    # Because this directory is in the webroot, files here will be web-accessible.
-    'web/uploads':
-        source: local
-        source_path: uploads
-    # Files in this directory will not be web-accessible.
-    'private':
-        source: local
-        source_path: private
+  'moodledata': 'shared:files/moodledata'
 
 
-# The configuration of app when it is exposed to the web.
-web:
-    locations:
-        "/":
-            # The public directory of the app, relative to its root.
-            root: "web"
-            # The front-controller script to send non-static requests to.
-            passthru: "/index.php"
+# The configuration of scheduled task execution.
+crons:
+  default:
+    # Moodle wants to run its cron every minute, but Platform.sh only allows ever 5 minutes max.
+    spec: '*/5 * * * *'
+    cmd: 'php ./public/admin/cli/cron.php >/dev/null'
