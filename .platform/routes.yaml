@@ -4,4 +4,4 @@ https://{default}:
 
 https://www.{default}:
   type: redirect
-  to: https://www.{default}
+  to: https://{default}
